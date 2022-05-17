@@ -12,9 +12,9 @@ go get github.com/dentech-floss/datetime@v0.1.0
 
 ### datetime
 
-[datetime.go](https://github.com/dentech-floss/datetime/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from UTC, it uses [relvacode/iso8601](https://github.com/relvacode/iso8601) for dealing with ISO8601 formatted strings. 
+[datetime.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from UTC, it uses [relvacode/iso8601](https://github.com/relvacode/iso8601) for dealing with ISO8601 formatted strings. 
 
-Here follows an example or it's usage, check out the [datetime_test.go](https://github.com/dentech-floss/datetime/pkg/datetime/datetime_test.go) for the full monty.
+Here follows an example or it's usage, check out the [datetime_test.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime_test.go) for the full monty.
 
 ```go
 package example
@@ -25,26 +25,26 @@ import (
 
 func Test_ISO8601StringToTime(t *testing.T) {
 
-	from = "2006-01-02T15:04:05-07:00"
+    from = "2006-01-02T15:04:05-07:00"
 
-	localTime, err = datetime.ISO8601StringToTime(from)
-	if err != nil {
-		t.Fatal(err)
-	}
-	utcTime, err = datetime.ISO8601StringToUTCTime(from)
-	if err != nil {
-		t.Fatal(err)
-	}
+    localTime, err = datetime.ISO8601StringToTime(from)
+    if err != nil {
+        t.Fatal(err)
+    }
+    utcTime, err = datetime.ISO8601StringToUTCTime(from)
+    if err != nil {
+        t.Fatal(err)
+    }
 
-	_, offsetInSeconds := localTime.Zone()
-	offsetInHours := (offsetInSeconds / 60) / 60
-	require.Equal(-7, offsetInHours)
+    _, offsetInSeconds := localTime.Zone()
+    offsetInHours := (offsetInSeconds / 60) / 60
+    require.Equal(-7, offsetInHours)
 
-	require.Equal(from, datetime.TimeToISO8601DateTimeString(localTime))
-	require.Equal("2006-01-02T22:04:05Z", datetime.TimeToISO8601DateTimeString(utcTime))
+    require.Equal(from, datetime.TimeToISO8601DateTimeString(localTime))
+    require.Equal("2006-01-02T22:04:05Z", datetime.TimeToISO8601DateTimeString(utcTime))
 
-	require.Equal(utcTime.In(localTime.Location()), localTime)
-	require.Equal(localTime.UTC(), utcTime)
+    require.Equal(utcTime.In(localTime.Location()), localTime)
+    require.Equal(localTime.UTC(), utcTime)
 }
 ```
 
@@ -52,7 +52,7 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 Disadvantages of using "time.Now()" in the code? Well... are we using UTC or not? What if we use "time.Now()" somewhere when we were supposed to use "time.Now().UTC()"? What if we have time-sensitive code and want to write tests for certain times? 
 
-Inject the mockable [TimeProvider](https://github.com/dentech-floss/datetime/pkg/datetime/time_provider.go) and get a single source of the current time.
+Inject the mockable [TimeProvider](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/time_provider.go) and get a single source of the current time.
 
 ```go
 package example
