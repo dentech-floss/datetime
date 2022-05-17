@@ -20,6 +20,7 @@ Here follows an example or it's usage, check out the [datetime_test.go](https://
 package example
 
 import (
+    "testing"
     "github.com/dentech-floss/logging/pkg/datetime"
 )
 
