@@ -21,7 +21,7 @@ package example
 
 import (
     "testing"
-    "github.com/dentech-floss/logging/pkg/datetime"
+    "github.com/dentech-floss/datetime/pkg/datetime"
 )
 
 func Test_ISO8601StringToTime(t *testing.T) {
@@ -59,7 +59,7 @@ Inject the mockable [TimeProvider](https://github.com/dentech-floss/datetime/blo
 package example
 
 import (
-    "github.com/dentech-floss/logging/pkg/datetime"
+    "github.com/dentech-floss/datetime/pkg/datetime"
 )
 
 func main() {
@@ -87,7 +87,7 @@ package example
 
 import (
     "testing"
-    "github.com/dentech-floss/logging/pkg/datetime"
+    "github.com/dentech-floss/datetime/pkg/datetime"
 )
 
 func Test_FindAppointments(t *testing.T) {
