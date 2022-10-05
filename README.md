@@ -1,6 +1,10 @@
 # datetime
 
-Contains various date/time related utility functionality, like parsing and formatting ISO8601 strings to/from UTC as well as different timezones/locations. It also contains a "TimeProvider" which is useful for controlling the perception of time in a service, by injecting this we get a single and mockable source of the current time throughout the code base.
+Contains various date/time related utility functionality, like parsing and formatting ISO8601 strings + converting [Date](https://github.com/googleapis/api-common-protos/blob/main/google/type/date.proto) and [DateTime](https://github.com/googleapis/api-common-protos/blob/main/google/type/datetime.proto) Google Common Types to/from UTC as well as different timezones/locations. 
+
+For dealing with ISO8601 formatted strings we make use of the [relvacode/iso8601](https://github.com/relvacode/iso8601) library.
+
+It also contains a "TimeProvider" which is useful for controlling the perception of time in a service, by injecting this we get a single and mockable source of the current time throughout the code base.
 
 ## Install
 
@@ -12,7 +16,7 @@ go get github.com/dentech-floss/datetime@v0.1.1
 
 ### datetime
 
-[datetime.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from UTC, it uses [relvacode/iso8601](https://github.com/relvacode/iso8601) for dealing with ISO8601 formatted strings as well as proto DATA/DATETIME to/from UTC.
+[datetime.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from Time.
 
 Here follows an example or it's usage, check out the [datetime_test.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime_test.go) for the full monty.
 
