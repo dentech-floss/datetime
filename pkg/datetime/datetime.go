@@ -1,10 +1,17 @@
 package datetime
 
 import (
+	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/relvacode/iso8601"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	dpb "google.golang.org/genproto/googleapis/type/date"
+	dtpb "google.golang.org/genproto/googleapis/type/datetime"
+
+	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
@@ -61,6 +68,105 @@ func ISO8601StringToUTCTime(dateTime string) (time.Time, error) {
 		return time, err
 	}
 	return time.UTC(), err
+}
+
+// ProtoDateToLocalTime returns a new Time based on the google.type.Date, in
+// the system's time zone.
+//
+// Hours, minues, seconds, and nanoseconds are set to 0.
+func ProtoDateToLocalTime(d *dpb.Date) time.Time {
+	return ProtoDateToTime(d, time.Local)
+}
+
+// ProtoDateToUTCTime returns a new Time based on the google.type.Date, in UTC.
+//
+// Hours, minutes, seconds, and nanoseconds are set to 0.
+func ProtoDateToUTCTime(d *dpb.Date) time.Time {
+	return ProtoDateToTime(d, time.UTC)
+}
+
+// ProtoDateToTime returns a new Time based on the google.type.Date and provided
+// *time.Location.
+//
+// Hours, minutes, seconds, and nanoseconds are set to 0.
+func ProtoDateToTime(d *dpb.Date, l *time.Location) time.Time {
+	return time.Date(int(d.GetYear()), time.Month(d.GetMonth()), int(d.GetDay()), 0, 0, 0, 0, l)
+}
+
+// TimeToProtoDate returns a new google.type.Date based on the provided time.Time.
+// The location is ignored, as is anything more precise than the day.
+func TimeToProtoDate(t *time.Time) *dpb.Date {
+	if t == nil {
+		return nil
+	}
+	return &dpb.Date{
+		Year:  int32(t.Year()),
+		Month: int32(t.Month()),
+		Day:   int32(t.Day()),
+	}
+}
+
+func TimeToProtoDateTime(t time.Time) (*dtpb.DateTime, error) {
+	dt := &dtpb.DateTime{
+		Year:    int32(t.Year()),
+		Month:   int32(t.Month()),
+		Day:     int32(t.Day()),
+		Hours:   int32(t.Hour()),
+		Minutes: int32(t.Minute()),
+		Seconds: int32(t.Second()),
+		Nanos:   int32(t.Nanosecond()),
+	}
+
+	// If the location is a UTC offset, encode it as such in the proto.
+	zone, offset := t.Zone()
+
+	// distinguish between time zone and utc offset
+	var offsetRegexp = regexp.MustCompile(`^UTC([+-][\d]{1,2})$`)
+
+	// Use utc offset if match or empty
+	match := offsetRegexp.FindStringSubmatch(zone)
+	if len(zone) == 0 || len(match) > 0 {
+		if offset > 0 {
+			dt.TimeOffset = &dtpb.DateTime_UtcOffset{
+				UtcOffset: &durpb.Duration{Seconds: int64(offset)},
+			}
+		}
+	} else {
+		dt.TimeOffset = &dtpb.DateTime_TimeZone{
+			TimeZone: &dtpb.TimeZone{Id: zone},
+		}
+	}
+
+	return dt, nil
+}
+
+func ProtoDateTimeToTime(d *dtpb.DateTime) (time.Time, error) {
+	var err error
+
+	// Determine the location.
+	loc := time.UTC
+	if tz := d.GetTimeZone(); tz != nil {
+		loc, err = time.LoadLocation(tz.GetId())
+		if err != nil {
+			return time.Time{}, err
+		}
+	}
+	if offset := d.GetUtcOffset(); offset != nil {
+		hours := int(offset.GetSeconds()) / 3600
+		loc = time.FixedZone(fmt.Sprintf("UTC%+d", hours), int(offset.GetSeconds()))
+	}
+
+	// Return the Time.
+	return time.Date(
+		int(d.GetYear()),
+		time.Month(d.GetMonth()),
+		int(d.GetDay()),
+		int(d.GetHours()),
+		int(d.GetMinutes()),
+		int(d.GetSeconds()),
+		int(d.GetNanos()),
+		loc,
+	), nil
 }
 
 func UTCTimeAdjustedToStartOfDay(t time.Time) time.Time {

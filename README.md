@@ -12,7 +12,7 @@ go get github.com/dentech-floss/datetime@v0.1.0
 
 ### datetime
 
-[datetime.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from UTC, it uses [relvacode/iso8601](https://github.com/relvacode/iso8601) for dealing with ISO8601 formatted strings. 
+[datetime.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime.go) contains a bunch of reusable utility func's for dealing with date/time to/from UTC, it uses [relvacode/iso8601](https://github.com/relvacode/iso8601) for dealing with ISO8601 formatted strings as well as proto DATA/DATETIME to/from UTC.
 
 Here follows an example or it's usage, check out the [datetime_test.go](https://github.com/dentech-floss/datetime/blob/main/pkg/datetime/datetime_test.go) for the full monty.
 

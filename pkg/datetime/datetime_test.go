@@ -2,8 +2,10 @@ package datetime
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	dpb "google.golang.org/genproto/googleapis/type/date"
 )
 
 func Test_ISO8601StringToTime(t *testing.T) {
@@ -109,6 +111,60 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 	require.Equal(utcTime.In(localTime.Location()), localTime)
 	require.Equal(localTime.UTC(), utcTime)
+}
+
+func Test_Date(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		y, m, d int
+	}{
+		{"NormalDate", 2012, 4, 21},
+		{"LongAgo", 1776, 7, 4},
+		{"Future", 2032, 4, 21},
+		{"FarFuture", 2062, 4, 21},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			datePb := &dpb.Date{Year: int32(test.y), Month: int32(test.m), Day: int32(test.d)}
+			times := map[string]time.Time{
+				"local": ProtoDateToLocalTime(datePb),
+				"utc":   ProtoDateToUTCTime(datePb),
+			}
+			for k, time := range times {
+				t.Run(k, func(t *testing.T) {
+					require.Equalf(t, time.Year(), test.y, "year")
+					require.Equalf(t, int(time.Month()), test.m, "month")
+					require.Equalf(t, time.Day(), test.d, "day")
+					dtPb := TimeToProtoDate(&time)
+					t.Run("ToProto", func(t *testing.T) {
+						require.Equalf(t, dtPb.GetYear(), int32(test.y), "year")
+						require.Equalf(t, dtPb.GetMonth(), int32(test.m), "month")
+						require.Equalf(t, dtPb.GetDay(), int32(test.d), "day")
+					})
+				})
+			}
+		})
+	}
+}
+
+func Test_DateTime(t *testing.T) {
+	from := "2006-01-02T01:04:05+04:00"
+	localTime, err := ISO8601StringToTime(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	proto, err := TimeToProtoDateTime(localTime)
+	require.Nilf(t, err, "converting from time to datetime proto")
+
+	apTime, err := ProtoDateTimeToTime(proto)
+	require.Nilf(t, err, "converting from datetime proto to time")
+
+	// localTime have no "name" set for loc
+	// should be equal if set to the apTime loc (UTC as default)
+	require.Equal(t, localTime.In(apTime.Location()), apTime)
+
+	require.Equal(t, localTime.UTC(), apTime.UTC())
+	require.Equal(t, localTime.Local(), apTime.Local())
 }
 
 func Test_ISO8601StringToTime_date(t *testing.T) {
