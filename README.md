@@ -5,7 +5,7 @@ Contains various date/time related utility functionality, like parsing and forma
 ## Install
 
 ```
-go get github.com/dentech-floss/datetime@v0.1.0
+go get github.com/dentech-floss/datetime@v0.1.1
 ```
 
 ## Usage
