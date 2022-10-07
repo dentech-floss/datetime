@@ -122,19 +122,26 @@ func Test_Date(t *testing.T) {
 		{"LongAgo", 1776, 7, 4},
 		{"Future", 2032, 4, 21},
 		{"FarFuture", 2062, 4, 21},
+		{"MinimumDate", 1, 1, 1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			datePb := &dpb.Date{Year: int32(test.y), Month: int32(test.m), Day: int32(test.d)}
+			local, err := ProtoDateToLocalTime(datePb)
+			require.Nil(t, err)
+
+			utc, err := ProtoDateToUTCTime(datePb)
+			require.Nil(t, err)
+
 			times := map[string]time.Time{
-				"local": ProtoDateToLocalTime(datePb),
-				"utc":   ProtoDateToUTCTime(datePb),
+				"local": local,
+				"utc":   utc,
 			}
 			for k, time := range times {
 				t.Run(k, func(t *testing.T) {
 					require.Equalf(t, time.Year(), test.y, "year")
 					require.Equalf(t, int(time.Month()), test.m, "month")
 					require.Equalf(t, time.Day(), test.d, "day")
-					dtPb := TimeToProtoDate(&time)
+					dtPb := TimeToProtoDate(time)
 					t.Run("ToProto", func(t *testing.T) {
 						require.Equalf(t, dtPb.GetYear(), int32(test.y), "year")
 						require.Equalf(t, dtPb.GetMonth(), int32(test.m), "month")
@@ -144,6 +151,32 @@ func Test_Date(t *testing.T) {
 			}
 		})
 	}
+
+	// Invalid proto values
+	datePb := &dpb.Date{Year: int32(0), Month: int32(0), Day: int32(0)}
+	_, err := ProtoDateToLocalTime(datePb)
+	require.Error(t, ErrInvalidValue, err)
+
+	// Invalid proto values
+	datePb = &dpb.Date{}
+	_, err = ProtoDateToLocalTime(datePb)
+	require.Error(t, ErrInvalidValue, err)
+
+	// location panic error
+	proto := TimeToProtoDate(time.Time{})
+	require.Panics(t, func() { ProtoDateToTime(proto, nil) })
+
+	// proto error
+	_, err = ProtoDateToTime(nil, time.UTC)
+	require.Error(t, err, ErrInvalidValue)
+
+	// "empty" date
+	proto = TimeToProtoDate(time.Time{})
+	date, err := ProtoDateToTime(proto, time.UTC)
+	require.Nil(t, err)
+	require.Equal(t, time.Time{}, date)
+	require.Equal(t, true, date.IsZero())
+
 }
 
 func Test_DateTime(t *testing.T) {
@@ -153,7 +186,7 @@ func Test_DateTime(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	proto, err := TimeToProtoDateTime(localTime)
+	proto := TimeToProtoDateTime(localTime)
 	require.Nilf(t, err, "converting from time to datetime proto")
 
 	apTime, err := ProtoDateTimeToTime(proto)
@@ -165,6 +198,18 @@ func Test_DateTime(t *testing.T) {
 
 	require.Equal(t, localTime.UTC(), apTime.UTC())
 	require.Equal(t, localTime.Local(), apTime.Local())
+
+	proto = TimeToProtoDateTime(time.Time{})
+	require.Nilf(t, err, "converting from time to datetime proto")
+
+	apTime, err = ProtoDateTimeToTime(proto)
+	require.Nilf(t, err, "converting from datetime proto to time")
+
+	require.Equal(t, time.Time{}, apTime)
+	require.Equal(t, true, apTime.IsZero())
+
+	_, err = ProtoDateTimeToTime(nil)
+	require.NotNil(t, err)
 }
 
 func Test_ISO8601StringToTime_date(t *testing.T) {

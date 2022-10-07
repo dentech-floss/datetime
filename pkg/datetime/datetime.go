@@ -1,6 +1,7 @@
 package datetime
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -18,6 +19,8 @@ const (
 	ISO8601Date     = "2006-01-02"
 	ISO8601DateTime = "2006-01-02T15:04:05Z07:00"
 )
+
+var ErrInvalidValue = errors.New("invalid value")
 
 func TimeToISO8601DateStringWrapper(t *time.Time) *wrapperspb.StringValue {
 	if t != nil {
@@ -74,14 +77,14 @@ func ISO8601StringToUTCTime(dateTime string) (time.Time, error) {
 // the system's time zone.
 //
 // Hours, minues, seconds, and nanoseconds are set to 0.
-func ProtoDateToLocalTime(d *dpb.Date) time.Time {
+func ProtoDateToLocalTime(d *dpb.Date) (time.Time, error) {
 	return ProtoDateToTime(d, time.Local)
 }
 
 // ProtoDateToUTCTime returns a new Time based on the google.type.Date, in UTC.
 //
 // Hours, minutes, seconds, and nanoseconds are set to 0.
-func ProtoDateToUTCTime(d *dpb.Date) time.Time {
+func ProtoDateToUTCTime(d *dpb.Date) (time.Time, error) {
 	return ProtoDateToTime(d, time.UTC)
 }
 
@@ -89,16 +92,24 @@ func ProtoDateToUTCTime(d *dpb.Date) time.Time {
 // *time.Location.
 //
 // Hours, minutes, seconds, and nanoseconds are set to 0.
-func ProtoDateToTime(d *dpb.Date, l *time.Location) time.Time {
-	return time.Date(int(d.GetYear()), time.Month(d.GetMonth()), int(d.GetDay()), 0, 0, 0, 0, l)
+func ProtoDateToTime(d *dpb.Date, l *time.Location) (time.Time, error) {
+	if d == nil {
+		return time.Time{}, fmt.Errorf("%w: date parameter not set", ErrInvalidValue)
+	}
+
+	if d.GetYear() < 1 || d.GetMonth() < 1 || d.GetDay() < 1 {
+		return time.Time{}, fmt.Errorf("%w: year, month, day not set", ErrInvalidValue)
+	}
+
+	return time.Date(
+		int(d.GetYear()),
+		time.Month(d.GetMonth()),
+		int(d.GetDay()), 0, 0, 0, 0, l), nil
 }
 
 // TimeToProtoDate returns a new google.type.Date based on the provided time.Time.
 // The location is ignored, as is anything more precise than the day.
-func TimeToProtoDate(t *time.Time) *dpb.Date {
-	if t == nil {
-		return nil
-	}
+func TimeToProtoDate(t time.Time) *dpb.Date {
 	return &dpb.Date{
 		Year:  int32(t.Year()),
 		Month: int32(t.Month()),
@@ -106,7 +117,7 @@ func TimeToProtoDate(t *time.Time) *dpb.Date {
 	}
 }
 
-func TimeToProtoDateTime(t time.Time) (*dtpb.DateTime, error) {
+func TimeToProtoDateTime(t time.Time) *dtpb.DateTime {
 	dt := &dtpb.DateTime{
 		Year:    int32(t.Year()),
 		Month:   int32(t.Month()),
@@ -137,10 +148,18 @@ func TimeToProtoDateTime(t time.Time) (*dtpb.DateTime, error) {
 		}
 	}
 
-	return dt, nil
+	return dt
 }
 
 func ProtoDateTimeToTime(d *dtpb.DateTime) (time.Time, error) {
+	if d == nil {
+		return time.Time{}, fmt.Errorf("%w: date parameter not set", ErrInvalidValue)
+	}
+
+	if d.GetYear() < 1 || d.GetMonth() < 1 || d.GetDay() < 1 {
+		return time.Time{}, fmt.Errorf("%w: year, month, day not set", ErrInvalidValue)
+	}
+
 	var err error
 
 	// Determine the location.
