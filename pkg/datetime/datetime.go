@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"time"
 
+	_ "time/tzdata" // Imports time zone data
+
 	"github.com/relvacode/iso8601"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -144,7 +146,7 @@ func TimeToProtoDateTime(t time.Time) *dtpb.DateTime {
 		}
 	} else {
 		dt.TimeOffset = &dtpb.DateTime_TimeZone{
-			TimeZone: &dtpb.TimeZone{Id: zone},
+			TimeZone: &dtpb.TimeZone{Id: t.Location().String()},
 		}
 	}
 

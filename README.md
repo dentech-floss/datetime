@@ -9,7 +9,7 @@ It also contains a "TimeProvider" which is useful for controlling the perception
 ## Install
 
 ```
-go get github.com/dentech-floss/datetime@v0.1.2
+go get github.com/dentech-floss/datetime@v0.1.3
 ```
 
 ## Usage

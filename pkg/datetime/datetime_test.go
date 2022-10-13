@@ -1,11 +1,14 @@
 package datetime
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	dpb "google.golang.org/genproto/googleapis/type/date"
+	dtpb "google.golang.org/genproto/googleapis/type/datetime"
+	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 func Test_ISO8601StringToTime(t *testing.T) {
@@ -111,6 +114,118 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 	require.Equal(utcTime.In(localTime.Location()), localTime)
 	require.Equal(localTime.UTC(), utcTime)
+}
+
+func Test_DateTimeZone(t *testing.T) {
+
+	t.Run("Empty timeZone", func(t *testing.T) {
+		tm := time.Date(2012, 4, 21, 11, 30, 0, 0, time.UTC)
+		dt := &dtpb.DateTime{
+			Year:       int32(tm.Year()),
+			Month:      int32(tm.Month()),
+			Day:        int32(tm.Day()),
+			Hours:      int32(tm.Hour()),
+			Minutes:    int32(tm.Minute()),
+			Seconds:    int32(tm.Second()),
+			TimeOffset: &dtpb.DateTime_TimeZone{TimeZone: &dtpb.TimeZone{Id: ""}},
+		}
+
+		pt, err := ProtoDateTimeToTime(dt)
+		require.Nil(t, err)
+		require.Equalf(t, tm, pt, "empty TimeOffset should result in UTC")
+
+		dt.TimeOffset = &dtpb.DateTime_TimeZone{TimeZone: nil}
+		pt, err = ProtoDateTimeToTime(dt)
+		require.Nil(t, err)
+		require.Equalf(t, tm, pt, "nil TimeZone should result in UTC")
+
+		dt.TimeOffset = nil
+		pt, err = ProtoDateTimeToTime(dt)
+		require.Nil(t, err)
+		require.Equalf(t, tm, pt, "nil TimeOffset should result in UTC")
+
+	})
+
+	t.Run("Unknown timeZone", func(t *testing.T) {
+		dt := &dtpb.DateTime{
+			Year:    int32(2012),
+			Month:   int32(4),
+			Day:     int32(21),
+			Hours:   int32(11),
+			Minutes: int32(30),
+			Seconds: int32(0),
+		}
+
+		dt.TimeOffset = &dtpb.DateTime_TimeZone{TimeZone: &dtpb.TimeZone{Id: "fake/ness"}}
+		pt, err := ProtoDateTimeToTime(dt)
+		require.NotNilf(t, err, "should result in error")
+		require.True(t, pt.IsZero(), "should result in zero time")
+	})
+
+	// supported happy path
+	for _, test := range []struct {
+		name               string
+		y, mo, d, h, mi, s int
+		tz                 *dtpb.TimeZone
+		offset             *durpb.Duration
+	}{
+		{"DateTimeTZ", 2012, 4, 21, 11, 30, 0, &dtpb.TimeZone{Id: "America/New_York"}, nil},
+		{"DateTimeTZ", 2012, 4, 21, 11, 30, 0, &dtpb.TimeZone{Id: "Europe/Berlin"}, nil},
+		{"DateTimeTZ", 2012, 4, 21, 11, 30, 0, nil, &durpb.Duration{Seconds: 3600 * 5}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Get the starting object.
+			dt := &dtpb.DateTime{
+				Year:    int32(test.y),
+				Month:   int32(test.mo),
+				Day:     int32(test.d),
+				Hours:   int32(test.h),
+				Minutes: int32(test.mi),
+				Seconds: int32(test.s),
+			}
+			if test.tz != nil {
+				dt.TimeOffset = &dtpb.DateTime_TimeZone{TimeZone: test.tz}
+			}
+			if test.offset != nil {
+				dt.TimeOffset = &dtpb.DateTime_UtcOffset{UtcOffset: test.offset}
+			}
+
+			// Convert to a time.Time.
+			tm, err := ProtoDateTimeToTime(dt)
+			require.Nil(t, err)
+			t.Run("ToTime", func(t *testing.T) {
+				require.Equal(t, tm.Year(), test.y)
+				require.Equal(t, tm.Month(), time.Month(test.mo))
+				require.Equal(t, tm.Day(), test.d)
+				require.Equal(t, tm.Hour(), test.h)
+				require.Equal(t, tm.Minute(), test.mi)
+				require.Equal(t, tm.Second(), test.s)
+				if test.tz != nil {
+					require.Equal(t, tm.Location().String(), test.tz.GetId())
+				}
+				if test.offset != nil {
+					require.Equal(t, tm.Location().String(), fmt.Sprintf("UTC+%d", test.offset.GetSeconds()/3600))
+				}
+			})
+
+			// Convert back to a duration.
+			t.Run("ToDateTime", func(t *testing.T) {
+				durPb := TimeToProtoDateTime(tm)
+				require.Equal(t, durPb.GetYear(), int32(test.y))
+				require.Equal(t, durPb.GetMonth(), int32(test.mo))
+				require.Equal(t, durPb.GetDay(), int32(test.d))
+				require.Equal(t, durPb.GetHours(), int32(test.h))
+				require.Equal(t, durPb.GetMinutes(), int32(test.mi))
+				require.Equal(t, durPb.GetSeconds(), int32(test.s))
+				if test.tz != nil {
+					require.Equal(t, durPb.GetTimeZone().GetId(), test.tz.GetId())
+				}
+				if test.offset != nil {
+					require.Equal(t, durPb.GetUtcOffset().GetSeconds(), test.offset.GetSeconds())
+				}
+			})
+		})
+	}
 }
 
 func Test_Date(t *testing.T) {
