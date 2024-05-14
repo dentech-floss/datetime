@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	dpb "google.golang.org/genproto/googleapis/type/date"
 	dtpb "google.golang.org/genproto/googleapis/type/datetime"
+	tod "google.golang.org/genproto/googleapis/type/timeofday"
 	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -204,7 +205,11 @@ func Test_DateTimeZone(t *testing.T) {
 					require.Equal(t, tm.Location().String(), test.tz.GetId())
 				}
 				if test.offset != nil {
-					require.Equal(t, tm.Location().String(), fmt.Sprintf("UTC+%d", test.offset.GetSeconds()/3600))
+					require.Equal(
+						t,
+						tm.Location().String(),
+						fmt.Sprintf("UTC+%d", test.offset.GetSeconds()/3600),
+					)
 				}
 			})
 
@@ -362,7 +367,10 @@ func Test_TimeToLocalISO8601DateTimeString(t *testing.T) {
 	offsetInHours := (offsetInSeconds / 60) / 60
 	require.Equal(7, offsetInHours)
 
-	require.Equal("2006-01-05T18:04:05+07:00", TimeToLocalISO8601DateTimeString(utcTime, localTime.Location()))
+	require.Equal(
+		"2006-01-05T18:04:05+07:00",
+		TimeToLocalISO8601DateTimeString(utcTime, localTime.Location()),
+	)
 }
 
 func Test_IsSameDate(t *testing.T) {
@@ -424,4 +432,28 @@ func Test_UTCTimeAdjustedToEndOfDay(t *testing.T) {
 
 	require.False(IsStartOfDay(utcTime))
 	require.True(IsEndOfDay(utcTime))
+}
+
+func Test_TimeToTimeOfDay(t *testing.T) {
+	require := require.New(t)
+	utcTime, err := ISO8601StringToUTCTime("2006-01-02T11:04:05Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	timeOfDay := TimeToTimeOfDay(utcTime)
+	require.Equal(int32(11), timeOfDay.GetHours())
+	require.Equal(int32(4), timeOfDay.GetMinutes())
+	require.Equal(int32(5), timeOfDay.GetSeconds())
+	require.Equal(int32(0), timeOfDay.GetNanos())
+}
+
+func Test_TimeOfDayToTime(t *testing.T) {
+	require := require.New(t)
+	timeOfDay := &tod.TimeOfDay{
+		Hours:   11,
+		Minutes: 4,
+		Seconds: 5,
+	}
+	utcTime := TimeOfDayToTime(timeOfDay)
+	require.Equal("0000-01-01T11:04:05Z", TimeToISO8601DateTimeString(utcTime))
 }
