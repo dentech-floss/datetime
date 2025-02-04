@@ -13,6 +13,7 @@ import (
 
 	dpb "google.golang.org/genproto/googleapis/type/date"
 	dtpb "google.golang.org/genproto/googleapis/type/datetime"
+	tod "google.golang.org/genproto/googleapis/type/timeofday"
 
 	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
@@ -40,7 +41,10 @@ func TimeToISO8601DateTimeStringWrapper(t *time.Time) *wrapperspb.StringValue {
 	}
 }
 
-func TimeToLocalISO8601DateTimeStringWrapper(t *time.Time, location *time.Location) *wrapperspb.StringValue {
+func TimeToLocalISO8601DateTimeStringWrapper(
+	t *time.Time,
+	location *time.Location,
+) *wrapperspb.StringValue {
 	if t != nil {
 		localTime := (*t).In(location)
 		return TimeToISO8601DateTimeStringWrapper(&localTime)
@@ -220,4 +224,29 @@ func IsEndOfDay(t time.Time) bool {
 	} else {
 		return false
 	}
+}
+
+func TimeToTimeOfDay(t time.Time) *tod.TimeOfDay {
+	return &tod.TimeOfDay{
+		Hours:   int32(t.Hour()),
+		Minutes: int32(t.Minute()),
+		Seconds: int32(t.Second()),
+		Nanos:   int32(t.Nanosecond()),
+	}
+}
+
+func TimeOfDayToTime(t *tod.TimeOfDay) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return time.Date(
+		0,
+		1,
+		1,
+		int(t.GetHours()),
+		int(t.GetMinutes()),
+		int(t.GetSeconds()),
+		int(t.GetNanos()),
+		time.UTC,
+	)
 }
