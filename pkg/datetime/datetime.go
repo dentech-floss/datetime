@@ -13,13 +13,14 @@ import (
 
 	dpb "google.golang.org/genproto/googleapis/type/date"
 	dtpb "google.golang.org/genproto/googleapis/type/datetime"
-
+	todpb "google.golang.org/genproto/googleapis/type/timeofday"
 	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
 const (
 	ISO8601Date     = "2006-01-02"
 	ISO8601DateTime = "2006-01-02T15:04:05Z07:00"
+	ISO8601Time     = "15:04:05Z07:00"
 )
 
 var ErrInvalidValue = errors.New("invalid value")
@@ -40,7 +41,10 @@ func TimeToISO8601DateTimeStringWrapper(t *time.Time) *wrapperspb.StringValue {
 	}
 }
 
-func TimeToLocalISO8601DateTimeStringWrapper(t *time.Time, location *time.Location) *wrapperspb.StringValue {
+func TimeToLocalISO8601DateTimeStringWrapper(
+	t *time.Time,
+	location *time.Location,
+) *wrapperspb.StringValue {
 	if t != nil {
 		localTime := (*t).In(location)
 		return TimeToISO8601DateTimeStringWrapper(&localTime)
@@ -57,7 +61,14 @@ func TimeToISO8601DateTimeString(t time.Time) string {
 	return t.Format(ISO8601DateTime)
 }
 
-func TimeToLocalISO8601DateTimeString(t time.Time, location *time.Location) string {
+func TimeToISO8601TimeOfDayString(t time.Time) string {
+	return t.Format(ISO8601Time)
+}
+
+func TimeToLocalISO8601DateTimeString(
+	t time.Time,
+	location *time.Location,
+) string {
 	return TimeToISO8601DateTimeString(t.In(location))
 }
 
@@ -69,6 +80,21 @@ func ISO8601StringToTime(dateTime string) (time.Time, error) {
 // Converts to UTC time
 func ISO8601StringToUTCTime(dateTime string) (time.Time, error) {
 	time, err := ISO8601StringToTime(dateTime)
+	if err != nil {
+		return time, err
+	}
+	return time.UTC(), err
+}
+
+// Converts to "local" time, meaning that the offset/timezone does not have to be UTC
+func ISO8601TimeOfDayStringToTime(time string) (time.Time, error) {
+	iso8601String := "1970-01-01T" + time
+	return iso8601.ParseString(iso8601String)
+}
+
+// Converts to UTC time
+func ISO8601TimeOfDayStringToUTCTime(dateTime string) (time.Time, error) {
+	time, err := ISO8601TimeOfDayStringToTime(dateTime)
 	if err != nil {
 		return time, err
 	}
@@ -94,7 +120,10 @@ func ProtoDateToUTCTime(d *dpb.Date) (time.Time, error) {
 // *time.Location.
 //
 // Hours, minutes, seconds, and nanoseconds are set to 0.
-func ProtoDateToTime(d *dpb.Date, l *time.Location) (time.Time, error) {
+func ProtoDateToTime(
+	d *dpb.Date,
+	l *time.Location,
+) (time.Time, error) {
 	if d == nil {
 		return time.Time{}, fmt.Errorf("%w: date parameter not set", ErrInvalidValue)
 	}
@@ -220,4 +249,15 @@ func IsEndOfDay(t time.Time) bool {
 	} else {
 		return false
 	}
+}
+
+func ProtoTimeOfDayToTime(t *todpb.TimeOfDay) (time.Time, error) {
+	if t == nil {
+		return time.Time{}, fmt.Errorf("%w: time of day parameter not set", ErrInvalidValue)
+	}
+
+	return time.Date(
+			0, 1, 1,
+			int(t.GetHours()), int(t.GetMinutes()), int(t.GetSeconds()), int(t.GetNanos()), time.UTC),
+		nil
 }

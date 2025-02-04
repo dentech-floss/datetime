@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	dpb "google.golang.org/genproto/googleapis/type/date"
 	dtpb "google.golang.org/genproto/googleapis/type/datetime"
+	todpb "google.golang.org/genproto/googleapis/type/timeofday"
 	durpb "google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -16,7 +17,7 @@ func Test_ISO8601StringToTime(t *testing.T) {
 	// Verifies that various strings with offset/timezone are correctly parsed
 	// to both local time and to UTC time + that we can keep track of the offset
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	// ...start with just a date:
 
@@ -26,11 +27,11 @@ func Test_ISO8601StringToTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.Equal(from, TimeToISO8601DateString(utcTime))
-	require.Equal("2006-01-02T00:00:00Z", TimeToISO8601DateTimeString(utcTime))
-	require.True(IsStartOfDay(utcTime))
+	_require.Equal(from, TimeToISO8601DateString(utcTime))
+	_require.Equal("2006-01-02T00:00:00Z", TimeToISO8601DateTimeString(utcTime))
+	_require.True(IsStartOfDay(utcTime))
 
-	// ...then an UTC date time:
+	// ...then a UTC date time:
 
 	from = "2006-01-02T01:04:05Z"
 
@@ -42,9 +43,9 @@ func Test_ISO8601StringToTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.Equal(from, TimeToISO8601DateTimeString(localTime))
-	require.Equal(from, TimeToISO8601DateTimeString(utcTime))
-	require.Equal(utcTime, localTime)
+	_require.Equal(from, TimeToISO8601DateTimeString(localTime))
+	_require.Equal(from, TimeToISO8601DateTimeString(utcTime))
+	_require.Equal(utcTime, localTime)
 
 	// ...a negative UTC offset/timezone:
 
@@ -61,13 +62,13 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 	_, offsetInSeconds := localTime.Zone()
 	offsetInHours := (offsetInSeconds / 60) / 60
-	require.Equal(-7, offsetInHours)
+	_require.Equal(-7, offsetInHours)
 
-	require.Equal(from, TimeToISO8601DateTimeString(localTime))
-	require.Equal("2006-01-02T22:04:05Z", TimeToISO8601DateTimeString(utcTime))
+	_require.Equal(from, TimeToISO8601DateTimeString(localTime))
+	_require.Equal("2006-01-02T22:04:05Z", TimeToISO8601DateTimeString(utcTime))
 
-	require.Equal(utcTime.In(localTime.Location()), localTime)
-	require.Equal(localTime.UTC(), utcTime)
+	_require.Equal(utcTime.In(localTime.Location()), localTime)
+	_require.Equal(localTime.UTC(), utcTime)
 
 	// ...a positive UTC offset/timezone:
 
@@ -84,13 +85,13 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 	_, offsetInSeconds = localTime.Zone()
 	offsetInHours = (offsetInSeconds / 60) / 60
-	require.Equal(7, offsetInHours)
+	_require.Equal(7, offsetInHours)
 
-	require.Equal(from, TimeToISO8601DateTimeString(localTime))
-	require.Equal("2006-01-02T15:04:05Z", TimeToISO8601DateTimeString(utcTime))
+	_require.Equal(from, TimeToISO8601DateTimeString(localTime))
+	_require.Equal("2006-01-02T15:04:05Z", TimeToISO8601DateTimeString(utcTime))
 
-	require.Equal(utcTime.In(localTime.Location()), localTime)
-	require.Equal(localTime.UTC(), utcTime)
+	_require.Equal(utcTime.In(localTime.Location()), localTime)
+	_require.Equal(localTime.UTC(), utcTime)
 
 	// ...and finally a positive UTC offset that shall "flip the date" when converted to UTC:
 
@@ -107,13 +108,55 @@ func Test_ISO8601StringToTime(t *testing.T) {
 
 	_, offsetInSeconds = localTime.Zone()
 	offsetInHours = (offsetInSeconds / 60) / 60
-	require.Equal(4, offsetInHours)
+	_require.Equal(4, offsetInHours)
 
-	require.Equal(from, TimeToISO8601DateTimeString(localTime))
-	require.Equal("2006-01-01T21:04:05Z", TimeToISO8601DateTimeString(utcTime))
+	_require.Equal(from, TimeToISO8601DateTimeString(localTime))
+	_require.Equal("2006-01-01T21:04:05Z", TimeToISO8601DateTimeString(utcTime))
 
-	require.Equal(utcTime.In(localTime.Location()), localTime)
-	require.Equal(localTime.UTC(), utcTime)
+	_require.Equal(utcTime.In(localTime.Location()), localTime)
+	_require.Equal(localTime.UTC(), utcTime)
+}
+
+func Test_ISO8601TimeOfDayStringToTime(t *testing.T) {
+
+	_require := require.New(t)
+
+	// UTC time
+	from := "01:04:05Z"
+
+	localTime, err := ISO8601TimeOfDayStringToTime(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utcTime, err := ISO8601TimeOfDayStringToUTCTime(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_require.Equal(from, TimeToISO8601TimeOfDayString(localTime))
+	_require.Equal(from, TimeToISO8601TimeOfDayString(utcTime))
+	_require.Equal(utcTime, localTime)
+
+	// negative UTC offset/timezone
+	from = "01:04:05-06:00"
+
+	localTime, err = ISO8601TimeOfDayStringToTime(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	utcTime, err = ISO8601TimeOfDayStringToUTCTime(from)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, offsetInSeconds := localTime.Zone()
+	offsetInHours := (offsetInSeconds / 60) / 60
+	_require.Equal(-6, offsetInHours)
+
+	_require.Equal(from, TimeToISO8601TimeOfDayString(localTime))
+	_require.Equal("07:04:05Z", TimeToISO8601TimeOfDayString(utcTime))
+
+	_require.Equal(utcTime.In(localTime.Location()), localTime)
+	_require.Equal(localTime.UTC(), utcTime)
 }
 
 func Test_DateTimeZone(t *testing.T) {
@@ -251,12 +294,12 @@ func Test_Date(t *testing.T) {
 				"local": local,
 				"utc":   utc,
 			}
-			for k, time := range times {
+			for k, _time := range times {
 				t.Run(k, func(t *testing.T) {
-					require.Equalf(t, time.Year(), test.y, "year")
-					require.Equalf(t, int(time.Month()), test.m, "month")
-					require.Equalf(t, time.Day(), test.d, "day")
-					dtPb := TimeToProtoDate(time)
+					require.Equalf(t, _time.Year(), test.y, "year")
+					require.Equalf(t, int(_time.Month()), test.m, "month")
+					require.Equalf(t, _time.Day(), test.d, "day")
+					dtPb := TimeToProtoDate(_time)
 					t.Run("ToProto", func(t *testing.T) {
 						require.Equalf(t, dtPb.GetYear(), int32(test.y), "year")
 						require.Equalf(t, dtPb.GetMonth(), int32(test.m), "month")
@@ -329,24 +372,24 @@ func Test_DateTime(t *testing.T) {
 
 func Test_ISO8601StringToTime_date(t *testing.T) {
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	utcTime, err := ISO8601StringToUTCTime("2006-01-02T22:04:05+07:00")
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.Equal("2006-01-02", TimeToISO8601DateString(utcTime))
+	_require.Equal("2006-01-02", TimeToISO8601DateString(utcTime))
 
 	utcTime, err = ISO8601StringToUTCTime("2006-01-02T01:04:05+04:00")
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.Equal("2006-01-01", TimeToISO8601DateString(utcTime)) // flip the date...
+	_require.Equal("2006-01-01", TimeToISO8601DateString(utcTime)) // flip the date...
 }
 
 func Test_TimeToLocalISO8601DateTimeString(t *testing.T) {
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	utcTime, err := ISO8601StringToUTCTime("2006-01-05T11:04:05Z")
 	if err != nil {
@@ -360,14 +403,14 @@ func Test_TimeToLocalISO8601DateTimeString(t *testing.T) {
 
 	_, offsetInSeconds := localTime.Zone()
 	offsetInHours := (offsetInSeconds / 60) / 60
-	require.Equal(7, offsetInHours)
+	_require.Equal(7, offsetInHours)
 
-	require.Equal("2006-01-05T18:04:05+07:00", TimeToLocalISO8601DateTimeString(utcTime, localTime.Location()))
+	_require.Equal("2006-01-05T18:04:05+07:00", TimeToLocalISO8601DateTimeString(utcTime, localTime.Location()))
 }
 
 func Test_IsSameDate(t *testing.T) {
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	utcTime1, err := ISO8601StringToUTCTime("2006-01-02")
 	if err != nil {
@@ -384,44 +427,62 @@ func Test_IsSameDate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	require.True(IsSameDate(utcTime1, utcTime2))
-	require.False(IsSameDate(utcTime1, utcTime3))
+	_require.True(IsSameDate(utcTime1, utcTime2))
+	_require.False(IsSameDate(utcTime1, utcTime3))
 }
 
 func Test_UTCTimeAdjustedToStartOfDay(t *testing.T) {
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	utcTime, err := ISO8601StringToUTCTime("2006-01-02T11:04:05Z")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	require.False(IsStartOfDay(utcTime))
-	require.False(IsEndOfDay(utcTime))
+	_require.False(IsStartOfDay(utcTime))
+	_require.False(IsEndOfDay(utcTime))
 
 	utcTime = UTCTimeAdjustedToStartOfDay(utcTime)
-	require.Equal("2006-01-02T00:00:00Z", TimeToISO8601DateTimeString(utcTime))
+	_require.Equal("2006-01-02T00:00:00Z", TimeToISO8601DateTimeString(utcTime))
 
-	require.True(IsStartOfDay(utcTime))
-	require.False(IsEndOfDay(utcTime))
+	_require.True(IsStartOfDay(utcTime))
+	_require.False(IsEndOfDay(utcTime))
 }
 
 func Test_UTCTimeAdjustedToEndOfDay(t *testing.T) {
 
-	require := require.New(t)
+	_require := require.New(t)
 
 	utcTime, err := ISO8601StringToUTCTime("2006-01-02T11:04:05Z")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	require.False(IsStartOfDay(utcTime))
-	require.False(IsEndOfDay(utcTime))
+	_require.False(IsStartOfDay(utcTime))
+	_require.False(IsEndOfDay(utcTime))
 
 	utcTime = UTCTimeAdjustedToEndOfDay(utcTime)
-	require.Equal("2006-01-02T23:59:59Z", TimeToISO8601DateTimeString(utcTime))
+	_require.Equal("2006-01-02T23:59:59Z", TimeToISO8601DateTimeString(utcTime))
 
-	require.False(IsStartOfDay(utcTime))
-	require.True(IsEndOfDay(utcTime))
+	_require.False(IsStartOfDay(utcTime))
+	_require.True(IsEndOfDay(utcTime))
+}
+
+func Test_ProtoTimeOfDayToTime(t *testing.T) {
+	_require := require.New(t)
+
+	proto := &todpb.TimeOfDay{
+		Hours:   11,
+		Minutes: 30,
+		Seconds: 0,
+		Nanos:   0,
+	}
+
+	tm, err := ProtoTimeOfDayToTime(proto)
+	_require.Nil(err)
+	_require.Equal(11, tm.Hour())
+	_require.Equal(30, tm.Minute())
+	_require.Equal(0, tm.Second())
+	_require.Equal(0, tm.Nanosecond())
 }
