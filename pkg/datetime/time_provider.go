@@ -5,14 +5,20 @@ import (
 )
 
 type TimeProvider interface {
-	// Get the current time
+	// Now - Get the current time
 	Now() time.Time
+	// Since - Get the duration since start
+	Since(start time.Time) time.Duration
 }
 
 type utcTimeProvider struct{}
 
 func (*utcTimeProvider) Now() time.Time {
 	return time.Now().UTC()
+}
+
+func (*utcTimeProvider) Since(start time.Time) time.Duration {
+	return time.Since(start)
 }
 
 func NewUTCTimeProvider() TimeProvider {
@@ -25,6 +31,10 @@ type fakeTimeProvider struct {
 
 func (f *fakeTimeProvider) Now() time.Time {
 	return f.now
+}
+
+func (f *fakeTimeProvider) Since(start time.Time) time.Duration {
+	return f.now.Sub(start)
 }
 
 func NewFakeTimeProvider(now time.Time) TimeProvider {
