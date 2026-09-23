@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/relvacode/iso8601 v1.7.0
 	github.com/stretchr/testify v1.11.1
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
