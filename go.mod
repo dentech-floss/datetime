@@ -4,13 +4,10 @@ go 1.26
 
 require (
 	github.com/relvacode/iso8601 v1.7.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.1
 	google.golang.org/protobuf v1.36.11
 )
 
-require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	google.golang.org/genproto v0.0.0-20260217215200-42d3e9bedb6d
-	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
+require go.yaml.in/yaml/v3 v3.0.5 // indirect
+
+require google.golang.org/genproto v0.0.0-20260217215200-42d3e9bedb6d
